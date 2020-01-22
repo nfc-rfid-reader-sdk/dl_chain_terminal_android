@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Blockchain Terminal</string>
+    <string name="settings_text"><u>Settings</u></string>
+</resources>

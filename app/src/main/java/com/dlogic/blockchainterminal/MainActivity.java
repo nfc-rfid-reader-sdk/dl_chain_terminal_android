@@ -35,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     String hostStr = "";
     RequestQueue requestQueue;
     StringRequest stringRequest;
+    String serverUrl = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,10 +44,8 @@ public class MainActivity extends AppCompatActivity {
 
         requestQueue = Volley.newRequestQueue(getApplicationContext());
 
-        HttpsTrustManager.allowAllSSL();
         SharedPreferences prefs = getSharedPreferences("MyPrefsFile", MODE_PRIVATE);
-        hostStr = prefs.getString("HostString", "");
-        final String serverUrl = hostStr;
+        serverUrl = prefs.getString("HostString", "");
 
         stringRequest = new StringRequest(Request.Method.POST, serverUrl, new Response.Listener<String>() {
             @Override
@@ -121,6 +120,18 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
 
                 ClearTable(R.id.statusTableId);
+
+                SharedPreferences prefs = getSharedPreferences("MyPrefsFile", MODE_PRIVATE);
+                serverUrl = prefs.getString("HostString", "");
+
+                Log.e("URL", serverUrl);
+
+                if(serverUrl.equals(""))
+                {
+                    Toast.makeText(getApplicationContext(), "Host is not defined", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 uploadData();
             }
         });

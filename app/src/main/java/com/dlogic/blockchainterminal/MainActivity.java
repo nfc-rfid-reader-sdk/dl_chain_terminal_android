@@ -32,9 +32,6 @@ public class MainActivity extends AppCompatActivity {
 
     Button btnSend;
     ProgressDialog dialog;
-    String hostStr = "";
-    RequestQueue requestQueue;
-    StringRequest stringRequest;
     String serverUrl = "";
 
     @Override
@@ -42,12 +39,54 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        requestQueue = Volley.newRequestQueue(getApplicationContext());
+        btnSend = findViewById(R.id.btnSendID);
+        btnSend.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
 
-        SharedPreferences prefs = getSharedPreferences("MyPrefsFile", MODE_PRIVATE);
-        serverUrl = prefs.getString("HostString", "");
+                ClearTable(R.id.statusTableId);
 
-        stringRequest = new StringRequest(Request.Method.POST, serverUrl, new Response.Listener<String>() {
+                SharedPreferences prefs = getSharedPreferences("MyPrefsFile", MODE_PRIVATE);
+                serverUrl = prefs.getString("HostString", "");
+
+                Log.e("URL", serverUrl);
+
+                if(serverUrl.equals(""))
+                {
+                    Toast.makeText(getApplicationContext(), "Host is not defined", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                uploadData();
+            }
+        });
+
+        ImageView settingsIcon = findViewById(R.id.iconSettingsId);
+        settingsIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        TextView settingsText = findViewById(R.id.txtSettingsId);
+        settingsText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        System.setProperty("http.keepAlive", "true");
+    }
+
+    public void uploadData()
+    {
+        //HttpsTrustManager.allowAllSSL();
+
+        StringRequest stringRequest = new StringRequest(Request.Method.POST, serverUrl, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 dialog.dismiss();
@@ -114,57 +153,12 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        btnSend = findViewById(R.id.btnSendID);
-        btnSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                ClearTable(R.id.statusTableId);
-
-                SharedPreferences prefs = getSharedPreferences("MyPrefsFile", MODE_PRIVATE);
-                serverUrl = prefs.getString("HostString", "");
-
-                Log.e("URL", serverUrl);
-
-                if(serverUrl.equals(""))
-                {
-                    Toast.makeText(getApplicationContext(), "Host is not defined", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
-                uploadData();
-            }
-        });
-
-        ImageView settingsIcon = findViewById(R.id.iconSettingsId);
-        settingsIcon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        TextView settingsText = findViewById(R.id.txtSettingsId);
-        settingsText.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
-                startActivity(intent);
-            }
-        });
-
-        System.setProperty("http.keepAlive", "true");
-    }
-
-    public void uploadData()
-    {
         stringRequest.setRetryPolicy(new DefaultRetryPolicy(
                 30000,
                 DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
                 DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
-        requestQueue.add(stringRequest);
+        Volley.newRequestQueue(getApplicationContext()).add(stringRequest);
 
         dialog = ProgressDialog.show(MainActivity.this, "",
                 "Put DL Signer cards on µFR reader...", true);

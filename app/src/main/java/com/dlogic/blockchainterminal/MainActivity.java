@@ -25,6 +25,8 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 
+import org.w3c.dom.Text;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,12 +34,17 @@ public class MainActivity extends AppCompatActivity {
 
     Button btnSend;
     ProgressDialog dialog;
+    StringRequest stringRequest;
+    RequestQueue requestQueue;
     String serverUrl = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        requestQueue = Volley.newRequestQueue(getApplicationContext());
+        CreateRequest();
 
         btnSend = findViewById(R.id.btnSendID);
         btnSend.setOnClickListener(new View.OnClickListener() {
@@ -84,9 +91,79 @@ public class MainActivity extends AppCompatActivity {
 
     public void uploadData()
     {
-        //HttpsTrustManager.allowAllSSL();
+        stringRequest.setRetryPolicy(new DefaultRetryPolicy(
+                30000,
+                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
+                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
 
-        StringRequest stringRequest = new StringRequest(Request.Method.POST, serverUrl, new Response.Listener<String>() {
+        requestQueue.add(stringRequest);
+
+        dialog = ProgressDialog.show(MainActivity.this, "",
+                "Put DL Signer cards on µFR reader...", true);
+    }
+
+    public void AddNewStatusRow(final int table, final String statusCode, final String description, final String colorStr)
+    {
+        MainActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                TableLayout readerTable = findViewById(table);
+                TableRow tr = new TableRow(MainActivity.this);
+
+                tr.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+                tr.setBackgroundResource(R.drawable.row_border);
+
+                TextView statusText = findViewById(R.id.statusTextId);
+
+                if(statusCode.contains("80"))
+                {
+                    statusText.setText("OK : " + description);
+                }
+                else
+                {
+                    statusText.setText("ERROR : " + description);
+                }
+
+                TextView tv = new TextView(MainActivity.this);
+                TextView tv1 = new TextView(MainActivity.this);
+
+                TableRow.LayoutParams params1 = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT);
+                params1.setMargins(10, 0, 0 , 0);
+
+                tv.setLayoutParams(params1);
+                tv1.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+
+                tr.setBackgroundColor(Color.parseColor("#" + colorStr));
+
+                tv1.setText(" ");
+                tv.setText(" ");
+
+                tr.addView(tv);
+                tr.addView(tv1);
+
+                readerTable.addView(tr, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
+            }
+        });
+    }
+
+    public void ClearTable(int tableID)
+    {
+        TextView statusText = findViewById(R.id.statusTextId);
+        statusText.setText("");
+
+        TableLayout table = findViewById(tableID);
+        table.removeAllViews();
+    }
+
+    public void CreateRequest()
+    {
+        HttpsTrustManager.allowAllSSL();
+
+        SharedPreferences prefs = getSharedPreferences("MyPrefsFile", MODE_PRIVATE);
+        serverUrl = prefs.getString("HostString", "");
+
+        stringRequest = new StringRequest(Request.Method.POST, serverUrl, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 dialog.dismiss();
@@ -152,66 +229,17 @@ public class MainActivity extends AppCompatActivity {
                 return params;
             }
         };
-
-        stringRequest.setRetryPolicy(new DefaultRetryPolicy(
-                30000,
-                DefaultRetryPolicy.DEFAULT_MAX_RETRIES,
-                DefaultRetryPolicy.DEFAULT_BACKOFF_MULT));
-
-        Volley.newRequestQueue(getApplicationContext()).add(stringRequest);
-
-        dialog = ProgressDialog.show(MainActivity.this, "",
-                "Put DL Signer cards on µFR reader...", true);
     }
 
-    public void AddNewStatusRow(final int table, final String statusCode, final String description, final String colorStr)
-    {
-        MainActivity.this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
 
-                TableLayout readerTable = findViewById(table);
-                TableRow tr = new TableRow(MainActivity.this);
-
-                tr.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-                tr.setBackgroundResource(R.drawable.row_border);
-
-                TextView statusText = findViewById(R.id.statusTextId);
-
-                if(statusCode.contains("80"))
-                {
-                    statusText.setText("OK : " + description);
-                }
-                else
-                {
-                    statusText.setText("ERROR : " + description);
-                }
-
-                TextView tv = new TextView(MainActivity.this);
-                TextView tv1 = new TextView(MainActivity.this);
-
-                TableRow.LayoutParams params1 = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT);
-                params1.setMargins(10, 0, 0 , 0);
-
-                tv.setLayoutParams(params1);
-                tv1.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-
-                tr.setBackgroundColor(Color.parseColor("#" + colorStr));
-
-                tv1.setText(" ");
-                tv.setText(" ");
-
-                tr.addView(tv);
-                tr.addView(tv1);
-
-                readerTable.addView(tr, new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, TableLayout.LayoutParams.WRAP_CONTENT));
-            }
-        });
+    public void onStop () {
+        stringRequest.cancel();
+        super.onStop();
     }
 
-    public void ClearTable(int tableID)
+    public void onResume()
     {
-        TableLayout table = findViewById(tableID);
-        table.removeAllViews();
+        CreateRequest();
+        super.onResume();
     }
 }
